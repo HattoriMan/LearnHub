@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <nav class="bg-slate-900 border-b border-red-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+            <div class="flex items-center">
+                <a href="/home.html" class="text-white font-bold text-xl tracking-tight">Skill<span class="text-indigo-400">++</span> <span class="text-xs font-normal text-red-300 ml-2 border border-red-400 px-2 py-0.5 rounded">Admin</span></a>
+            </div>
+            <div id="nav-right" class="flex items-center"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Pending Courses Audit</h1>
+
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul id="pendingCoursesList" class="divide-y divide-gray-200">
+                <li class="px-6 py-12 text-center text-gray-500" id="loadingMsg">Loading pending courses...</li>
+            </ul>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        checkAuthAndRole(['admin']);
+
+        async function loadPendingCourses() {
+            try {
+                const courses = await apiCall('/admin/courses/pending');
+                const list = document.getElementById('pendingCoursesList');
+                
+                if (courses.length === 0) {
+                    list.innerHTML = '<li class="px-6 py-12 text-center text-gray-500">No courses pending audit right now.</li>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                courses.forEach(course => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="px-4 py-4 flex items-center sm:px-6 hover:bg-gray-50 transition">
+                            <div class="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <h3 class="text-lg font-medium text-indigo-600 truncate">${course.title}</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Instructor: ${course.instructor_name} | Created date: ${new Date(course.created_at).toLocaleDateString()}</p>
+                                    <p class="mt-2 text-sm text-gray-600">${course.description}</p>
+                                </div>
+                                <div class="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5 flex gap-2">
+                                    <a href="/course.html?id=${course.course_id}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Preview</a>
+                                    <button onclick="auditCourse(${course.course_id}, 'approved')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">Approve</button>
+                                    <button onclick="auditCourse(${course.course_id}, 'rejected')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">Reject</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                document.getElementById('pendingCoursesList').innerHTML = '<li class="px-6 py-4 text-red-500">Error loading courses</li>';
+            }
+        }
+
+        async function auditCourse(courseId, status) {
+            try {
+                await apiCall(`/admin/courses/${courseId}/audit`, 'PUT', { status });
+                loadPendingCourses();
+            } catch(e) {
+                alert("Action failed: " + e.message);
+            }
+        }
+
+        loadPendingCourses();
+    </script>
+</body>
+</html>

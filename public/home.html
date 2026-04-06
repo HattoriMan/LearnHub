@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | Learn Anything, Anywhere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hero-pattern {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 20%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <nav class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/home.html" class="text-white font-bold text-xl tracking-tight">Skill<span class="text-indigo-500">++</span></a>
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="/home.html" class="bg-slate-800 text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                            <a href="/browse.html" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Browse Courses</a>
+                        </div>
+                    </div>
+                </div>
+                <div id="nav-right" class="flex items-center">
+                    <!-- Populated by api.js -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow">
+        <!-- Hero Section -->
+        <div class="hero-pattern text-white py-20 px-4 sm:px-6 lg:px-8 text-center sm:text-left shadow-lg">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl text-center">
+                    <span class="block">Master new skills with</span>
+                    <span class="block text-indigo-500">Skill++ Platform</span>
+                </h1>
+                <p class="mt-3 text-base text-gray-300 sm:mt-5 sm:text-lg sm:max-w-xl mx-auto md:mt-5 md:text-xl text-center">
+                    Join thousands of learners and top instructors to boost your career.
+                </p>
+                <div class="mt-8 flex justify-center space-x-4">
+                    <a href="/browse.html" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10 max-w-xs transition">
+                        Explore Courses
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Section -->
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">Why Skill++?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="text-indigo-500 text-4xl mb-4">🎓</div>
+                    <h3 class="text-lg font-bold mb-2">Expert Instructors</h3>
+                    <p class="text-gray-600">Learn from industry professionals who are passionate about teaching.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="text-indigo-500 text-4xl mb-4">📜</div>
+                    <h3 class="text-lg font-bold mb-2">Earn Certificates</h3>
+                    <p class="text-gray-600">Showcase your verified skills with certificates of completion.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="text-indigo-500 text-4xl mb-4">⏱️</div>
+                    <h3 class="text-lg font-bold mb-2">Learn at your pace</h3>
+                    <p class="text-gray-600">Access course content anytime, anywhere, and track your progress.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 text-gray-400 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <span class="text-white font-bold tracking-tight">Skill++</span> &copy; 2026
+            </div>
+            <div class="flex space-x-6">
+                <a href="#" class="hover:text-white">Contact Us</a>
+                <a href="#" class="hover:text-white">Terms</a>
+                <a href="#" class="hover:text-white">Privacy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/api.js"></script>
+</body>
+</html>

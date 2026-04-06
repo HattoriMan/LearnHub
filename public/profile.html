@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | User Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <nav class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+            <a href="/home.html" class="text-white font-bold text-xl tracking-tight">Skill<span class="text-indigo-500">++</span></a>
+            <div id="nav-right" class="flex items-center"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 w-full">
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-indigo-600 px-4 py-8 sm:px-6">
+                <div class="flex items-center">
+                    <div class="h-20 w-20 rounded-full bg-white text-indigo-600 flex items-center justify-center text-4xl font-bold" id="profileInitials"></div>
+                    <div class="ml-6">
+                        <h3 class="text-2xl leading-6 font-bold text-white" id="profileName">Loading...</h3>
+                        <p class="mt-2 max-w-2xl text-sm text-indigo-200" id="profileRole">Role</p>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+                <dl class="divide-y divide-gray-200">
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Full name</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2" id="detailName">-</dd>
+                    </div>
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Account Type</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 capitalize" id="detailRole">-</dd>
+                    </div>
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Email address</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2" id="detailEmail">-</dd>
+                    </div>
+                    <div class="py-4 sm:py-5 sm:px-6 flex gap-4">
+                        <button onclick="openEditModal()" class="flex-1 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
+                            Edit Profile
+                        </button>
+                        <button onclick="logout()" class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:text-sm">
+                            Log out completely
+                        </button>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
+            <p class="text-sm text-gray-500 mb-4">Note: Changing your account type (Learner/Instructor/Admin) is not permitted.</p>
+            <form id="editProfileForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="editName" required class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="editEmail" required class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-gray-600 hover:text-gray-900 border rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        if (!checkAuthAndRole()) {
+            window.location.href = '/login.html';
+        } else {
+            loadProfile();
+        }
+
+        async function loadProfile() {
+            const user = getUser();
+            document.getElementById('profileInitials').textContent = (user.name || "U").charAt(0).toUpperCase();
+            document.getElementById('profileRole').textContent = "Skill++ " + String(user.role).charAt(0).toUpperCase() + String(user.role).slice(1);
+            document.getElementById('detailRole').textContent = user.role;
+            
+            try {
+                // Fetch latest details
+                const data = await apiCall('/auth/profile');
+                document.getElementById('profileName').textContent = data.name;
+                document.getElementById('detailName').textContent = data.name;
+                document.getElementById('detailEmail').textContent = data.email;
+                
+                // Keep local storage fresh
+                localStorage.setItem('name', data.name);
+                
+                // update inputs
+                document.getElementById('editName').value = data.name;
+                document.getElementById('editEmail').value = data.email;
+            } catch (err) {
+                console.error("Failed to load profile", err);
+            }
+        }
+
+        function openEditModal() {
+            document.getElementById('editProfileModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editProfileModal').classList.add('hidden');
+        }
+
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('editName').value;
+            const email = document.getElementById('editEmail').value;
+            
+            try {
+                const res = await apiCall('/auth/profile', 'PUT', { name, email });
+                localStorage.setItem('name', res.name); // update UI across tabs next load
+                closeEditModal();
+                loadProfile(); // refresh page view
+                updateNav(); // refresh nav top right
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    </script>
+</body>
+</html>

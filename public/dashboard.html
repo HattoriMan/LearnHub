@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <nav class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/home.html" class="text-white font-bold text-xl tracking-tight">Skill<span class="text-indigo-500">++</span></a>
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="/dashboard.html" class="bg-slate-800 text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="/browse.html" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Browse Courses</a>
+                            <a href="/wishlist.html" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Wishlist</a>
+                        </div>
+                    </div>
+                </div>
+                <div id="nav-right" class="flex items-center">
+                    <!-- Populated by api.js -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">My Learning</h1>
+        <p class="text-gray-600 mb-8" id="welcomeMessage">Welcome back!</p>
+
+        <div id="enrolledCourses" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Courses go here -->
+            <div class="col-span-full text-center py-12 text-gray-500 hidden" id="noCoursesMessage">
+                You are not enrolled in any courses yet. <a href="/browse.html" class="text-indigo-600 hover:underline">Browse courses</a> to get started.
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        checkAuthAndRole(['learner']);
+        const user = getUser();
+        document.getElementById('welcomeMessage').innerText = `Welcome back, ${user.name}!`;
+
+        async function loadDashboard() {
+            try {
+                const courses = await apiCall('/learner/enrollments');
+                const container = document.getElementById('enrolledCourses');
+                const noCoursesMsg = document.getElementById('noCoursesMessage');
+                
+                if (courses.length === 0) {
+                    noCoursesMsg.classList.remove('hidden');
+                    return;
+                }
+                
+                container.innerHTML = '';
+                courses.forEach(course => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden flex flex-col";
+                    
+                    const progress = course.progress || 0; // stub
+                    
+                    card.innerHTML = `
+                        <div class="p-6 flex-grow">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">${course.title}</h3>
+                            <p class="text-sm text-gray-500 mb-4">By ${course.instructor_name}</p>
+                            
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                                <div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${progress}%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 text-right mb-4">${progress}% Complete</p>
+                        </div>
+                        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+                            <a href="/lesson.html?course_id=${course.course_id}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Continue Learning &rarr;</a>
+                            ${progress === 100 ? `<a href="/certificate.html?course_id=${course.course_id}" class="text-green-600 hover:underline text-sm font-medium">View Certificate</a>` : ''}
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

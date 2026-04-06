@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | Verify Certificate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+            <a href="/home.html" class="text-white font-bold text-xl tracking-tight">Skill<span class="text-indigo-500">++</span></a>
+            <div id="nav-right" class="flex items-center"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2 text-center">Verify a Certificate</h1>
+            <p class="text-gray-500 text-sm text-center mb-6">Enter the Certificate ID to look up its validity.</p>
+            
+            <form id="verifyForm">
+                <div class="mb-4">
+                    <label for="certId" class="block text-sm font-medium text-gray-700 mb-1">Certificate ID</label>
+                    <input type="text" id="certId" placeholder="e.g. CERT-1-1" required class="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-medium py-3 rounded-md hover:bg-indigo-700 transition" id="verifyBtn">Verify Now</button>
+            </form>
+
+            <div id="resultBox" class="mt-6 hidden">
+                <!-- Result gets dynamically injected here -->
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        // Try grab from URL parm if they clicked a link
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlId = urlParams.get('id');
+        if (urlId) {
+            document.getElementById('certId').value = urlId;
+            verifyCert(urlId);
+        }
+
+        document.getElementById('verifyForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            verifyCert(document.getElementById('certId').value.trim());
+        });
+
+        async function verifyCert(certId) {
+            const resultBox = document.getElementById('resultBox');
+            const verifyBtn = document.getElementById('verifyBtn');
+            const originalText = verifyBtn.textContent;
+            
+            try {
+                verifyBtn.textContent = 'Verifying...';
+                verifyBtn.disabled = true;
+                resultBox.classList.add('hidden');
+                
+                const data = await apiCall(`/courses/verify/${certId}`);
+                
+                resultBox.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <span class="text-green-500 text-xl">✅</span>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Certificate is Valid</h3>
+                                <div class="mt-2 text-sm text-green-700">
+                                    <p><strong>Issued to:</strong> ${data.learner_name}</p>
+                                    <p class="mt-1"><strong>Course:</strong> ${data.course_title}</p>
+                                    <p class="mt-1"><strong>Instructor:</strong> ${data.instructor_name}</p>
+                                    <p class="mt-1"><strong>Date:</strong> ${new Date(data.issued_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultBox.classList.remove('hidden');
+                
+            } catch (err) {
+                resultBox.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <span class="text-red-500 text-xl">❌</span>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Verification Failed</h3>
+                                <p class="mt-1 text-sm text-red-700">We could not find a valid certificate matching this ID. Ensure it was typed correctly.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultBox.classList.remove('hidden');
+            } finally {
+                verifyBtn.textContent = originalText;
+                verifyBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

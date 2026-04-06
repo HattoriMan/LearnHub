@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | Learn Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col h-screen overflow-hidden">
+    <!-- Navbar -->
+    <nav class="bg-slate-900 border-b border-slate-800 shrink-0">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+            <div class="flex items-center">
+                <a href="/dashboard.html" class="text-white font-bold text-xl tracking-tight mr-4 hover:text-indigo-400">&larr; Back to Dashboard</a>
+                <span id="courseTitleHeader" class="text-gray-300 border-l border-slate-700 pl-4">Loading...</span>
+            </div>
+            <div id="nav-right" class="flex items-center"></div>
+        </div>
+    </nav>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar: Content list -->
+        <aside class="w-80 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900">Course Content</h2>
+                <!-- Progress bar -->
+                <div class="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="modulesContainer" class="flex-1 divide-y divide-gray-100">
+                <div class="p-4 text-center text-gray-500">Loading modules...</div>
+            </div>
+        </aside>
+
+        <!-- Main Content: Video Player -->
+        <main class="flex-1 bg-gray-100 flex flex-col overflow-y-auto w-full relative">
+            <div class="flex-1 p-6 w-full flex flex-col">
+                <div class="bg-black w-full rounded-lg aspect-video shadow-md overflow-hidden relative flex items-center justify-center" id="videoContainer">
+                    <iframe id="youtubePlayer" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="hidden relative z-10 w-full h-full"></iframe>
+                    <div id="videoPlaceholder" class="text-white text-center absolute z-0 flex flex-col items-center justify-center">
+                        <svg class="w-16 h-16 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                        <p class="text-lg" id="placeholderText">Select a lesson to begin</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-white p-6 rounded-lg shadow-sm w-full">
+                    <div class="flex justify-between items-start mb-4">
+                        <h1 class="text-2xl font-bold text-gray-900" id="lessonTitle">No lesson selected</h1>
+                        <button id="markCompleteBtn" class="hidden shrink-0 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium transition disabled:bg-gray-300">Mark as Complete</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <h3 class="text-xl font-bold mb-4">Leave a Review</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                <select id="reviewRating" class="w-full border rounded p-2">
+                    <option value="5">★★★★★ (5/5)</option>
+                    <option value="4">★★★★☆ (4/5)</option>
+                    <option value="3">★★★☆☆ (3/5)</option>
+                    <option value="2">★★☆☆☆ (2/5)</option>
+                    <option value="1">★☆☆☆☆ (1/5)</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Comment</label>
+                <textarea id="reviewComment" class="w-full border rounded p-2" rows="3"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="document.getElementById('reviewModal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:text-gray-900">Cancel</button>
+                <button onclick="submitReview()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        checkAuthAndRole(['learner', 'admin', 'instructor']);
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('course_id');
+        const user = getUser();
+        let currentLesson = null;
+        let activeVideoUrl = '';
+        let completedLessons = [];
+        let totalLessonsCount = 0;
+
+        async function init() {
+            if (!courseId) return window.location.href = '/dashboard.html';
+            
+            try {
+                if (user.role === 'learner') {
+                    // Verify enrollment
+                    const enrollments = await apiCall('/learner/enrollments');
+                    const isEnrolled = enrollments.find(e => e.course_id == courseId);
+                    if (!isEnrolled) {
+                        alert('You must enroll in this course first.');
+                        window.location.href = `/course.html?id=${courseId}`;
+                        return;
+                    }
+                }
+
+                // Fetch course details
+                const course = await apiCall(`/courses/${courseId}`);
+                document.getElementById('courseTitleHeader').textContent = course.title;
+                
+                // Fetch progress
+                completedLessons = await apiCall(`/learner/progress/${courseId}`);
+                
+                const container = document.getElementById('modulesContainer');
+                container.innerHTML = '';
+                
+                if (!course.modules || course.modules.length === 0) {
+                    container.innerHTML = '<div class="p-4 text-center text-gray-500">No content uploaded yet.</div>';
+                    return;
+                }
+
+                let isFirst = true;
+                totalLessonsCount = 0;
+
+                course.modules.forEach(mod => {
+                    if (mod.lessons) totalLessonsCount += mod.lessons.length;
+                    const modDiv = document.createElement('div');
+                    modDiv.innerHTML = `
+                        <button class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 font-medium text-gray-900 border-b border-gray-100 flex justify-between">
+                            <span>M${mod.module_index}: ${mod.title}</span>
+                        </button>
+                        <ul class="block bg-white pb-2 pr-0">
+                            ${mod.lessons && mod.lessons.map(l => {
+                                const isCompleted = completedLessons.find(c => c.module_index == l.module_index && c.lesson_index == l.lesson_index);
+                                return `
+                                <li>
+                                    <button onclick="selectLesson(${l.module_index}, ${l.lesson_index}, '${encodeURIComponent(l.video_url || '')}', '${encodeURIComponent(l.title)}')" class="w-full text-left pl-8 pr-4 py-2 text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition flex justify-between items-center">
+                                        <span><span class="inline-block w-4 mr-1">${isCompleted ? '✅' : '🎥'}</span> ${l.lesson_index}. ${l.title}</span>
+                                    </button>
+                                </li>
+                            `}).join('') || '<li class="px-8 py-2 text-sm text-gray-400">No lessons</li>'}
+                        </ul>
+                    `;
+                    container.appendChild(modDiv);
+
+                    if (isFirst && mod.lessons && mod.lessons.length > 0) {
+                        selectLesson(mod.module_index, mod.lessons[0].lesson_index, mod.lessons[0].video_url, mod.lessons[0].title);
+                        isFirst = false;
+                    }
+                });
+
+                // Update progress bar
+                updateProgressBar();
+                
+            } catch (err) {
+                console.error(err);
+                document.getElementById('modulesContainer').innerHTML = '<div class="p-4 text-red-500">Failed to load content.</div>';
+            }
+        }
+        
+        function updateProgressBar() {
+            if (totalLessonsCount > 0) {
+                const percent = Math.round((completedLessons.length / totalLessonsCount) * 100);
+                document.getElementById('progressBar').style.width = percent + '%';
+            }
+        }
+
+        function extractYoutubeId(url) {
+            if (!url) return null;
+            const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})/);
+            return match ? match[1] : null;
+        }
+
+        function selectLesson(moduleIndex, lessonIndex, videoUrl, title) {
+            currentLesson = { moduleIndex, lessonIndex };
+            videoUrl = decodeURIComponent(videoUrl);
+            title = decodeURIComponent(title);
+            
+            const btn = document.getElementById('markCompleteBtn');
+            const isCompleted = completedLessons.find(c => c.module_index === moduleIndex && c.lesson_index === lessonIndex);
+            
+            if (user.role !== 'learner') {
+                document.getElementById('markCompleteBtn').style.display = 'none';
+            } else if (isCompleted) {
+                btn.textContent = 'Completed!';
+                btn.classList.add('bg-gray-400');
+                btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                btn.disabled = true;
+            } else {
+                btn.textContent = 'Mark as Complete';
+                btn.classList.remove('bg-gray-400');
+                btn.classList.add('bg-green-500', 'hover:bg-green-600');
+                btn.disabled = false;
+            }
+            btn.classList.remove('hidden');
+
+            // Set title and URL info natively using Video Container wrapping
+            const container = document.getElementById('videoContainer');
+            const finalUrl = videoUrl || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+            
+            if (finalUrl.startsWith('/cdn/videos/') || finalUrl.endsWith('.mp4') || finalUrl.endsWith('.webm') || finalUrl.endsWith('.ogg')) {
+                // Return an HTML5 video tag
+                container.innerHTML = `
+                    <video id="nativePlayer" controls class="absolute top-0 left-0 w-full h-full object-contain" autoplay>
+                        <source src="${finalUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                `;
+            } else {
+                const youtubeId = extractYoutubeId(finalUrl);
+                
+                if (youtubeId) {
+                    container.innerHTML = `
+                        <iframe id="youtubePlayer" width="100%" height="100%" src="https://www.youtube.com/embed/${youtubeId}?autoplay=0&rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="relative z-10 w-full h-full"></iframe>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div id="videoPlaceholder" class="text-white text-center absolute z-0 flex flex-col items-center justify-center h-full w-full">
+                            <p class="text-sm">Video URL format not supported for inline play:</p>
+                            <a href="${finalUrl}" target="_blank" class="text-indigo-400 mt-2 underline">Open Link</a>
+                        </div>
+                    `;
+                }
+            }
+            
+            document.getElementById('lessonTitle').textContent = title;
+        }
+
+        document.getElementById('markCompleteBtn').addEventListener('click', async () => {
+            if (!currentLesson) return;
+            try {
+                const btn = document.getElementById('markCompleteBtn');
+                btn.disabled = true;
+                
+                await apiCall('/learner/progress', 'POST', {
+                    course_id: courseId,
+                    module_index: currentLesson.moduleIndex,
+                    lesson_index: currentLesson.lessonIndex
+                });
+                
+                // Add to local state and update
+                completedLessons.push({
+                    module_index: currentLesson.moduleIndex,
+                    lesson_index: currentLesson.lessonIndex
+                });
+                
+                updateProgressBar();
+                init(); // Reload sidebar to show checkmark
+                
+                btn.textContent = 'Completed!';
+                btn.classList.add('bg-gray-400');
+                btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+
+                // Prompt for review if all modules complete
+                if (completedLessons.length === totalLessonsCount) {
+                    setTimeout(() => {
+                        document.getElementById('reviewModal').classList.remove('hidden');
+                    }, 500);
+                }
+            } catch (err) {
+                alert("Failed to mark progress: " + err.message);
+                document.getElementById('markCompleteBtn').disabled = false;
+            }
+        });
+
+        async function submitReview() {
+            const rating = document.getElementById('reviewRating').value;
+            const comment = document.getElementById('reviewComment').value;
+            try {
+                await apiCall(`/learner/courses/${courseId}/reviews`, 'POST', { rating: parseInt(rating), comment });
+                document.getElementById('reviewModal').classList.add('hidden');
+                alert('Thank you for the review!');
+            } catch (e) {
+                alert('Review failed: ' + e.message);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

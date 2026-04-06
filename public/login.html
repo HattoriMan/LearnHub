@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill++ | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <nav class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+            <a href="/home.html" class="text-white font-bold text-xl tracking-tight">Skill<span class="text-indigo-500">++</span></a>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-md space-y-8">
+            <div>
+                <h2 class="mt-2 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    Or <a href="/register.html" class="font-medium text-indigo-600 hover:text-indigo-500">register a new account</a>
+                </p>
+            </div>
+            
+            <div id="successMessage" class="hidden bg-green-100 text-green-700 p-3 rounded text-sm text-center">Registration successful! Please login.</div>
+            
+            <form class="space-y-6" id="loginForm">
+                <div id="errorMessage" class="hidden bg-red-100 text-red-700 p-3 rounded text-sm"></div>
+                
+                <div class="rounded-md shadow-sm space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+                        <input id="email" name="email" type="email" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm mt-1">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input id="password" name="password" type="password" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm mt-1">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                        Sign in
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        // Check for registered param
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('registered') === 'true') {
+            document.getElementById('successMessage').classList.remove('hidden');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+
+            try {
+                const res = await apiCall('/auth/login', 'POST', { email, password });
+                localStorage.setItem('token', res.token);
+                localStorage.setItem('role', res.role);
+                localStorage.setItem('name', res.name);
+                localStorage.setItem('id', res.id);
+                
+                if (res.role === 'admin') window.location.href = '/admin.html';
+                else if (res.role === 'instructor') window.location.href = '/instructor.html';
+                else window.location.href = '/dashboard.html';
+            } catch (err) {
+                errorDiv.textContent = err.message;
+                errorDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
